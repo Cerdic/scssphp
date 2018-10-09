@@ -1198,7 +1198,7 @@ class Parser
     {
         $s = $this->count;
         $items = [];
-
+        $value = null;
         while ($this->$parseItem($value)) {
             $items[] = $value;
 
