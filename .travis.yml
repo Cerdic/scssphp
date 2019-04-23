@@ -18,6 +18,7 @@ script:
 branches:
   only:
     - master
+    - maint/leafo/master
 
 matrix:
   allow_failures:
