@@ -1342,7 +1342,7 @@ class Parser
 
             $this->count += $len;
 
-            if ($this->literal(')')) {
+            if ($this->matchChar(')')) {
                 $content = substr($this->buffer, $s, $this->count - $s);
                 $out = [Type::T_KEYWORD, $content];
 
