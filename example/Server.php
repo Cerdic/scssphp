@@ -11,7 +11,9 @@
 
 namespace Leafo\ScssPhp;
 
+use Leafo\ScssPhp\Compiler;
 use Leafo\ScssPhp\Exception\ServerException;
+use Leafo\ScssPhp\Version;
 
 /**
  * Server
