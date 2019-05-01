@@ -7,8 +7,8 @@
   color: white; }
   .child1 {
     color: green; }
-    .child2 {
-      color: blue; }
+  .child2 {
+    color: blue; }
   .parent-block .step-child {
     color: black; }
 
@@ -36,20 +36,21 @@ body .second {
 @media (min-width: 300px) {
     .my-widget .inside-mq {
       inside-style: mq; } }
-  .my-widget .outside-mq {
-    outside-style: mq; }
-  .outside-class {
-    color: blue; }
+    .my-widget .outside-mq {
+      outside-style: mq; }
+    .outside-class {
+      color: blue; }
   @media (min-width: 300px) {
-          .with-only {
-            color: pink; } }
+      .with-only {
+        color: pink; } }
 
 @media screen and (max-width: 320px) {
   .foo {
     margin: 0; } }
-  @media screen and (max-width: 320px) {
-        .bar {
-          padding: 0; } }
+
+@media screen and (max-width: 320px) {
+      .bar {
+        padding: 0; } }
   .baar {
     padding: 0; }
   .foo .barr {
@@ -59,14 +60,16 @@ body .second {
   .foo .bar {
     width: 0; }
   @supports ( display: flex ) {
-          .baz {
-            height: 0; } }
-  @media screen and (max-width: 640px) {
-          .qux {
-            margin: 0; } }
-  @media screen and (max-width: 640px) {
-          .foo .quux {
-            padding: 0; } }
+      .baz {
+        height: 0; } }
+
+@media screen and (max-width: 640px) {
+        .qux {
+          margin: 0; } }
+
+@media screen and (max-width: 640px) {
+        .foo .quux {
+          padding: 0; } }
   .foo .quix {
     padding: 0; }
 
@@ -76,4 +79,31 @@ body .second {
     padding: 10px; }
 
 a.badge {
+  text-decoration: none; }
+
+.badge-primary {
+  background-color: blue; }
+  a.badge-primary:focus, a.badge-primary.focus {
+    outline: 0; }
+
+.badge-secondary {
+  background-color: yellow; }
+  a.badge-secondary:focus, a.badge-secondary.focus {
+    outline: 0; }
+
+.table-hover tbody tr:hover, .table2#id tbody tr:hover {
+  color: #ddd;
+  background-color: #eee; }
+  .table-hover tbody tr.foo, .table2#id tbody tr.foo {
+    color: red; }
+
+.badge {
+  display: inline-block; }
+  @media (prefers-reduced-motion: reduce) {
+  .badge {
+    transition: none; } }
+  a.badge:hover, a.badge:focus {
+    text-decoration: none; }
+
+.btn:hover, .btn:focus {
   text-decoration: none; }
