@@ -442,7 +442,6 @@ class Parser
 
             $this->seek($s);
 
-
             if ($this->literal('@return', 7) && ($this->valueList($retVal) || true) && $this->end()) {
                 $this->append([Type::T_RETURN, isset($retVal) ? $retVal : [Type::T_NULL]], $s);
 
@@ -793,9 +792,11 @@ class Parser
         }
 
         $this->env = $block->parent;
+
         unset($block->parent);
 
         $comments = $block->comments;
+
         if ($comments) {
             $this->env->comments = $comments;
             unset($block->comments);
@@ -889,7 +890,6 @@ class Parser
      */
     protected function match($regex, &$out, $eatWhitespace = null)
     {
-
         $r = '/' . $regex . '/' . $this->patternModifiers;
 
         if (! preg_match($r, $this->buffer, $out, null, $this->count)) {
@@ -909,7 +909,6 @@ class Parser
         return true;
     }
 
-
     /**
      * Match a single string
      *
@@ -920,7 +919,6 @@ class Parser
      */
     protected function matchChar($char, $eatWhitespace = null)
     {
-
         if (! isset($this->buffer[$this->count]) || $this->buffer[$this->count] !== $char) {
             return false;
         }
@@ -936,7 +934,6 @@ class Parser
         }
         return true;
     }
-
 
     /**
      * Match literal string
@@ -965,7 +962,6 @@ class Parser
         }
         return true;
     }
-
 
     /**
      * Match some whitespace
@@ -1228,6 +1224,7 @@ class Parser
         $s = $this->count;
         $items = [];
         $value = null;
+
         while ($this->$parseItem($value)) {
             $items[] = $value;
 
@@ -1353,7 +1350,6 @@ class Parser
      */
     protected function value(&$out)
     {
-
         if (! isset($this->buffer[$this->count])) {
             return false;
         }
@@ -1380,6 +1376,7 @@ class Parser
         if ($char === 'n' && $this->literal('not', 3, false)) {
             if ($this->whitespace() && $this->value($inner)) {
                 $out = [Type::T_UNARY, 'not', $inner, $this->inParens];
+
                 return true;
             }
 
@@ -1387,6 +1384,7 @@ class Parser
 
             if ($this->parenValue($inner)) {
                 $out = [Type::T_UNARY, 'not', $inner, $this->inParens];
+
                 return true;
             }
 
@@ -1396,18 +1394,21 @@ class Parser
         // addition
         if ($char === '+') {
             $this->count++;
+
             if ($this->value($inner)) {
                 $out = [Type::T_UNARY, '+', $inner, $this->inParens];
                 return true;
             }
+
             $this->count--;
+
             return false;
         }
-
 
         // negation
         if ($char === '-') {
             $this->count++;
+
             if ($this->variable($inner) || $this->unit($inner) || $this->parenValue($inner)) {
                 $out = [Type::T_UNARY, '-', $inner, $this->inParens];
                 return true;
@@ -1442,7 +1443,6 @@ class Parser
         if (($char === '"' || $char === "'") && $this->string($out)) {
             return true;
         }
-
 
         if ($this->unit($out)) {
             return true;
@@ -2218,7 +2218,6 @@ class Parser
                 break;
             }
 
-
             //self
             switch ($char) {
                 case '&':
@@ -2235,20 +2234,20 @@ class Parser
                     continue 2;
             }
 
-
             if ($char === '\\' && $this->match('\\\\\S', $m)) {
                 $parts[] = $m[0];
                 continue;
             }
 
-
             if ($char === '%') {
                 $this->count++;
+
                 if ($this->placeholder($placeholder)) {
                     $parts[] = '%';
                     $parts[] = $placeholder;
                     continue;
                 }
+
                 break;
             }
 
@@ -2263,7 +2262,6 @@ class Parser
                 continue;
             }
 
-
             // a pseudo selector
             if ($char === ':') {
                 if ($this->buffer[$this->count + 1] === ':') {
@@ -2273,6 +2271,7 @@ class Parser
                     $this->count++;
                     $part = ':';
                 }
+
                 if ($this->mixedKeyword($nameParts)) {
                     $parts[] = $part;
 
@@ -2301,9 +2300,7 @@ class Parser
                 }
             }
 
-
             $this->seek($s);
-
 
             // attribute selector
             if ($char === '[' &&
@@ -2324,7 +2321,6 @@ class Parser
 
             $this->seek($s);
 
-
             // for keyframes
             if ($this->unit($unit)) {
                 $parts[] = $unit;
@@ -2335,9 +2331,6 @@ class Parser
                 $parts[] = $name;
                 continue;
             }
-
-
-
 
             break;
         }
