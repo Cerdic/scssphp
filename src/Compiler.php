@@ -185,7 +185,6 @@ class Compiler
             'encoding' => $this->encoding,
             'sourceMap' => serialize($this->sourceMap),
             'sourceMapOptions' => $this->sourceMapOptions,
-            'formater' => $this->formatter,
         );
         return $options;
     }
