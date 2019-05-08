@@ -1118,20 +1118,33 @@ class Compiler
         $this->scope->parent->children[] = $this->scope;
 
         // wrap assign children in a block
-        foreach ($block->children as $k => $child) {
-            if ($child[0] === Type::T_ASSIGN) {
-                $wrapped = new Block;
-                $wrapped->sourceName   = $block->sourceName;
-                $wrapped->sourceIndex  = $block->sourceIndex;
-                $wrapped->sourceLine   = $block->sourceLine;
-                $wrapped->sourceColumn = $block->sourceColumn;
-                $wrapped->selectors    = [];
-                $wrapped->comments     = [];
-                $wrapped->parent       = $block;
-                $wrapped->children     = [$child];
-                $wrapped->selfParent   = $block->selfParent;
+        // except for @font-face
+        if ($block->type !== Type::T_DIRECTIVE || $block->name !== "font-face") {
+            // (siblings children in the same block)
+            $previousWrap = null;
+            foreach ($block->children as $k => $child) {
+                if ($child[0] === Type::T_ASSIGN) {
+                    if (! is_null($previousWrap)) {
+                        $block->children[$previousWrap][1]->children[] = $child;
+                        unset($block->children[$k]);
+                    } else {
+                        $wrapped = new Block;
+                        $wrapped->sourceName   = $block->sourceName;
+                        $wrapped->sourceIndex  = $block->sourceIndex;
+                        $wrapped->sourceLine   = $block->sourceLine;
+                        $wrapped->sourceColumn = $block->sourceColumn;
+                        $wrapped->selectors    = [];
+                        $wrapped->comments     = [];
+                        $wrapped->parent       = $block;
+                        $wrapped->children     = [$child];
+                        $wrapped->selfParent   = $block->selfParent;
 
-                $block->children[$k] = [Type::T_BLOCK, $wrapped];
+                        $block->children[$k] = [Type::T_BLOCK, $wrapped];
+                        $previousWrap = $k;
+                    }
+                } else {
+                    $previousWrap = null;
+                }
             }
         }
 
@@ -1493,6 +1506,39 @@ class Compiler
                 return;
             }
         }
+    }
+
+
+    /**
+     * evaluate media query : compile internal value keeping the structure inchanged
+     *
+     * @param array $queryList
+     *
+     * @return array
+     */
+    protected function evaluateMediaQuery($queryList)
+    {
+        foreach ($queryList as $kql => $query) {
+            foreach ($query as $kq => $q) {
+                for ($i = 1; $i < count($q); $i++) {
+                    $value = $this->compileValue($q[$i]);
+
+                    // the parser had no mean to know if media type or expression if it was an interpolation
+                    if ($q[0] == Type::T_MEDIA_TYPE &&
+                      (strpos($value, '(') !== false ||
+                        strpos($value, ')') !== false ||
+                        strpos($value, ':') !== false)) {
+                        $queryList[$kql][$kq][0] = Type::T_MEDIA_EXPRESSION;
+
+                        $value = ltrim($value, '(');
+                        $value = rtrim($value, ')');
+                    }
+                    $queryList[$kql][$kq][$i] = [Type::T_KEYWORD, $value];
+                }
+            }
+        }
+
+        return $queryList;
     }
 
     /**
@@ -2064,10 +2110,13 @@ class Compiler
                     }
                 }
 
+                // the content stored need to be cloned to not have its scope spoiled by a further call to the same mixin
+                // ie recursive @include of the same mixin
                 if (isset($content)) {
-                    $content->scope = $callingScope;
+                    $copy_content = clone $content;
+                    $copy_content->scope = $callingScope;
 
-                    $this->setRaw(static::$namespaces['special'] . 'content', $content, $this->env);
+                    $this->setRaw(static::$namespaces['special'] . 'content', $copy_content, $this->env);
                 }
 
                 if (isset($mixin->args)) {
@@ -2098,7 +2147,6 @@ class Compiler
 
                 $storeEnv = $this->storeEnv;
                 $this->storeEnv = $content->scope;
-
                 $this->compileChildrenNoReturn($content->children, $out);
 
                 $this->storeEnv = $storeEnv;
@@ -3227,6 +3275,11 @@ class Compiler
             ? $env->block->queryList
             : [[[Type::T_MEDIA_VALUE, $env->block->value]]];
 
+        $storeEnv = $this->env;
+        $this->env = $env;
+        $parentQueries = $this->evaluateMediaQuery($parentQueries);
+        $this->env = $storeEnv;
+
         if ($childQueries === null) {
             $childQueries = $parentQueries;
         } else {
@@ -3418,7 +3471,11 @@ class Compiler
         $nextIsRoot = false;
         $hasNamespace = $normalizedName[0] === '^' || $normalizedName[0] === '@' || $normalizedName[0] === '%';
 
+        $max_depth = 10000;
         for (;;) {
+            if ($max_depth-- <= 0) {
+                break;
+            }
             if (array_key_exists($normalizedName, $env->store)) {
                 if ($unreduced && isset($env->storeUnreduced[$normalizedName])) {
                     return $env->storeUnreduced[$normalizedName];
