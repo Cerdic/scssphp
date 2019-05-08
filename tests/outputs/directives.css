@@ -22,7 +22,6 @@ div {
 
 @font-face {
   color: red;
-
   height: 20px; }
 
 @keyframes 'bounce' {
@@ -108,8 +107,15 @@ div {
 
 @supports (position: sticky) {
     .sticky-top {
-      position: sticky; } }
+      position: sticky;
+      top: 0; } }
 
 @supports (position: sticky) {
   .sticky-top2 {
     position: sticky; } }
+
+@media print {
+  .table-bordered th, .table-bordered td {
+    border: 1px solid #ddd !important; } }
+  @font-face {
+    font-family: "Glyphicons Halflings"; }
