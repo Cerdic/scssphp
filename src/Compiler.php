@@ -13,7 +13,6 @@ namespace Leafo\ScssPhp;
 
 use Leafo\ScssPhp\Base\Range;
 use Leafo\ScssPhp\Block;
-use Leafo\ScssPhp\Cache;
 use Leafo\ScssPhp\Colors;
 use Leafo\ScssPhp\Compiler\Environment;
 use Leafo\ScssPhp\Exception\CompilerException;
@@ -146,8 +145,6 @@ class Compiler
     protected $charsetSeen;
     protected $sourceNames;
 
-    protected $cache;
-
     protected $indentLevel;
     protected $commentsSeen;
     protected $extends;
@@ -166,14 +163,10 @@ class Compiler
     /**
      * Constructor
      */
-    public function __construct($cache_options = null)
+    public function __construct()
     {
         $this->parsedFiles = [];
         $this->sourceNames = [];
-
-        if ($cache_options) {
-            $this->cache = new Cache($cache_options);
-        }
     }
 
     /**
@@ -256,7 +249,7 @@ class Compiler
      */
     protected function parserFactory($path)
     {
-        $parser = new Parser($path, count($this->sourceNames), $this->encoding, $this->cache);
+        $parser = new Parser($path, count($this->sourceNames), $this->encoding);
 
         $this->sourceNames[] = $path;
         $this->addParsedFile($path);

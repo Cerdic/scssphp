@@ -53,8 +53,6 @@ class Parser
     protected static $operatorPattern;
     protected static $whitePattern;
 
-    protected $cache;
-
     private $sourceName;
     private $sourceIndex;
     private $sourcePositions;
@@ -76,9 +74,8 @@ class Parser
      * @param string  $sourceName
      * @param integer $sourceIndex
      * @param string  $encoding
-     * @param Cache $cache
      */
-    public function __construct($sourceName, $sourceIndex = 0, $encoding = 'utf-8', $cache = null)
+    public function __construct($sourceName, $sourceIndex = 0, $encoding = 'utf-8')
     {
         $this->sourceName       = $sourceName ?: '(stdin)';
         $this->sourceIndex      = $sourceIndex;
@@ -97,10 +94,6 @@ class Parser
             static::$whitePattern = $this->utf8
                 ? '/' . $commentSingle . '[^\n]*\s*|(' . static::$commentPattern . ')\s*|\s+/AisuS'
                 : '/' . $commentSingle . '[^\n]*\s*|(' . static::$commentPattern . ')\s*|\s+/AisS';
-        }
-
-        if ($cache) {
-            $this->cache = $cache;
         }
     }
 
@@ -149,19 +142,6 @@ class Parser
      */
     public function parse($buffer)
     {
-
-        if ($this->cache) {
-            $cache_key = $this->sourceName . ":" . md5($buffer);
-            $parse_options = array(
-                'charset' => $this->charset,
-                'utf8' => $this->utf8,
-            );
-            $v = $this->cache->getCache("parse", $cache_key, $parse_options);
-            if (!is_null($v)) {
-                return $v;
-            }
-        }
-
         // strip BOM (byte order marker)
         if (substr($buffer, 0, 3) === "\xef\xbb\xbf") {
             $buffer = substr($buffer, 3);
@@ -200,10 +180,6 @@ class Parser
         $this->env->isRoot    = true;
 
         $this->restoreEncoding();
-
-        if ($this->cache) {
-            $this->cache->setCache("parse", $cache_key, $this->env, $parse_options);
-        }
 
         return $this->env;
     }
