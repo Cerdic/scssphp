@@ -65,6 +65,7 @@ class Parser
     private $utf8;
     private $encoding;
     private $patternModifiers;
+    private $commentsSeen;
 
     /**
      * Constructor
@@ -82,6 +83,7 @@ class Parser
         $this->charset          = null;
         $this->utf8             = ! $encoding || strtolower($encoding) === 'utf-8';
         $this->patternModifiers = $this->utf8 ? 'Aisu' : 'Ais';
+        $this->commentsSeen   = [];
 
         if (empty(static::$operatorPattern)) {
             static::$operatorPattern = '([*\/%+-]|[!=]\=|\>\=?|\<\=\>|\<\=?|and|or)';
@@ -806,8 +808,6 @@ class Parser
      * Seek to position in input stream (or return current position in input stream)
      *
      * @param integer $where
-     *
-     * @return integer
      */
     protected function seek($where)
     {
@@ -1265,9 +1265,9 @@ class Parser
     /**
      * Parse expression specifically checking for lists in parenthesis or brackets
      *
-     * @param array $out
+     * @param array   $out
      * @param integer $s
-     * @param string $closingParen
+     * @param string  $closingParen
      *
      * @return boolean
      */
@@ -1540,7 +1540,7 @@ class Parser
      * Parse function call
      *
      * @param string $name
-     * @param array $out
+     * @param array  $func
      *
      * @return boolean
      */
@@ -1791,7 +1791,7 @@ class Parser
     /**
      * Parse number with unit
      *
-     * @param array $out
+     * @param array $unit
      *
      * @return boolean
      */
