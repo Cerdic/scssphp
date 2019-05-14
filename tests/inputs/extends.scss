@@ -387,3 +387,26 @@ embed.bar {
 .class3:not(:last-child) {
 	@extend .class1;
 }
+
+%corners {
+  border-radius: 5px;
+}
+.inline-menu {
+    &:hover > .sub-menu {
+      @extend %corners;
+    }
+}
+
+.header-menu {
+  @extend .inline-menu;
+}
+
+$placeholdername: 'myplaceholder';
+%#{$placeholdername} {
+  color: red;
+}
+.myclass {
+  @extend %myplaceholder;
+}
+
+
