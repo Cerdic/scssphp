@@ -855,7 +855,6 @@ class Compiler
 
                     $this->scope->children[] = $annotation;
                 }
-
             }
 
             $this->compileChildrenNoReturn($media->children, $this->scope);
@@ -1359,6 +1358,7 @@ class Compiler
 
         // after evaluating interpolates, we might need a second pass
         if ($this->shouldEvaluate) {
+            $selectors = $this->revertSelfSelector($selectors);
             $buffer = $this->collapseSelectors($selectors);
             $parser = $this->parserFactory(__METHOD__);
 
@@ -1414,30 +1414,82 @@ class Compiler
      * Collapse selectors
      *
      * @param array $selectors
+     * @param bool $selectorFormat
+     *   if false return a collapsed string
+     *   if true return an array description of a structured selector
      *
      * @return string
      */
-    protected function collapseSelectors($selectors)
+    protected function collapseSelectors($selectors, $selectorFormat = false)
     {
         $parts = [];
 
         foreach ($selectors as $selector) {
-            $output = '';
+            $output = [];
+            $glueNext = false;
             foreach ($selector as $node) {
-                $output .= ($output ? ' ' : '');
+                $compound = '';
 
                 array_walk_recursive(
                     $node,
-                    function ($value, $key) use (&$output) {
-                        $output .= $value;
+                    function ($value, $key) use (&$compound) {
+                        $compound .= $value;
                     }
                 );
+                if ($selectorFormat && $this->isImmediateRelationshipCombinator($compound)) {
+                    if (count($output)) {
+                        $output[count($output) - 1] .= ' ' . $compound;
+                    } else {
+                        $output[] = $compound;
+                    }
+                    $glueNext = true;
+                } elseif ($glueNext) {
+                    $output[count($output) - 1] .= ' ' . $compound;
+                    $glueNext = false;
+                } else {
+                    $output[] = $compound;
+                }
             }
 
+            if ($selectorFormat) {
+                foreach ($output as &$o) {
+                    $o = [Type::T_STRING, '', [$o]];
+                }
+                $output = [Type::T_LIST, ' ', $output];
+            } else {
+                $output = implode(' ', $output);
+            }
             $parts[] = $output;
         }
 
-        return implode(', ', $parts);
+        if ($selectorFormat) {
+            $parts = [Type::T_LIST, ',', $parts];
+        } else {
+            $parts = implode(', ', $parts);
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Parse down the selector and revert [self] to "&" before a reparsing
+     *
+     * @param array $selectors
+     *
+     * @return array
+     */
+    protected function revertSelfSelector($selectors)
+    {
+        foreach ($selectors as &$part) {
+            if (is_array($part)) {
+                if ($part === [Type::T_SELF]) {
+                    $part = '&';
+                } else {
+                    $part = $this->revertSelfSelector($part);
+                }
+            }
+        }
+        return $selectors;
     }
 
     /**
@@ -2630,6 +2682,9 @@ class Compiler
 
             case Type::T_INTERPOLATE:
                 $value[1] = $this->reduce($value[1]);
+                if ($inExp) {
+                    return $value[1];
+                }
 
                 return $value;
 
@@ -2638,9 +2693,8 @@ class Compiler
 
             case Type::T_SELF:
                 $selfSelector = $this->multiplySelectors($this->env);
-                $selfSelector = $this->collapseSelectors($selfSelector);
-
-                return [Type::T_STRING, '', [$selfSelector]];
+                $selfSelector = $this->collapseSelectors($selfSelector, true);
+                return $selfSelector;
 
             default:
                 return $value;
@@ -3372,7 +3426,7 @@ class Compiler
                                 $selectors[serialize($s)] = $s;
                             }
                         } else {
-                            $s = $this->joinSelectors($parent, $selector,$stillHasSelf);
+                            $s = $this->joinSelectors($parent, $selector, $stillHasSelf);
                             $selectors[serialize($s)] = $s;
                         }
                     }

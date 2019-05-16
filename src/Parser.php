@@ -1270,7 +1270,10 @@ class Parser
         }
 
         if ($this->matchChar('[')) {
-            if ($this->parenExpression($out, $s, "]")) {
+            if ($this->parenExpression($out, $s, "]", [Type::T_LIST, Type::T_KEYWORD])) {
+                if ($out[0] !== Type::T_LIST && $out[0] !== Type::T_MAP) {
+                    $out = [Type::T_STRING, '', [ '[', $out, ']' ]];
+                }
                 return true;
             }
 
@@ -1292,10 +1295,11 @@ class Parser
      * @param array   $out
      * @param integer $s
      * @param string  $closingParen
+     * @param array   $allowedTypes
      *
      * @return boolean
      */
-    protected function parenExpression(&$out, $s, $closingParen = ")")
+    protected function parenExpression(&$out, $s, $closingParen = ")", $allowedTypes = [Type::T_LIST, Type::T_MAP])
     {
         if ($this->matchChar($closingParen)) {
             $out = [Type::T_LIST, '', []];
@@ -1303,13 +1307,13 @@ class Parser
             return true;
         }
 
-        if ($this->valueList($out) && $this->matchChar($closingParen) && $out[0] === Type::T_LIST) {
+        if ($this->valueList($out) && $this->matchChar($closingParen) && in_array($out[0], $allowedTypes)) {
             return true;
         }
 
         $this->seek($s);
 
-        if ($this->map($out)) {
+        if (in_array(Type::T_MAP, $allowedTypes) && $this->map($out)) {
             return true;
         }
 
@@ -2142,19 +2146,19 @@ class Parser
      *
      * @return boolean
      */
-    protected function selectors(&$out)
+    protected function selectors(&$out, $subSelector = false)
     {
         $s = $this->count;
         $selectors = [];
 
-        while ($this->selector($sel)) {
+        while ($this->selector($sel, $subSelector)) {
             $selectors[] = $sel;
 
-            if (! $this->matchChar(',')) {
+            if (! $this->matchChar(',',  true)) {
                 break;
             }
 
-            while ($this->matchChar(',')) {
+            while ($this->matchChar(',', true)) {
                 ; // ignore extra
             }
         }
@@ -2177,23 +2181,23 @@ class Parser
      *
      * @return boolean
      */
-    protected function selector(&$out)
+    protected function selector(&$out, $subSelector = false)
     {
         $selector = [];
 
         for (;;) {
-            if ($this->match('[>+~]+', $m)) {
+            if ($this->match('[>+~]+', $m, true)) {
                 $selector[] = [$m[0]];
                 continue;
             }
 
-            if ($this->selectorSingle($part)) {
+            if ($this->selectorSingle($part, $subSelector)) {
                 $selector[] = $part;
                 $this->match('\s+', $m);
                 continue;
             }
 
-            if ($this->match('\/[^\/]+\/', $m)) {
+            if ($this->match('\/[^\/]+\/', $m, true)) {
                 $selector[] = [$m[0]];
                 continue;
             }
@@ -2220,7 +2224,7 @@ class Parser
      *
      * @return boolean
      */
-    protected function selectorSingle(&$out)
+    protected function selectorSingle(&$out, $subSelector = false)
     {
         $oldWhite = $this->eatWhiteDefault;
         $this->eatWhiteDefault = false;
@@ -2241,6 +2245,11 @@ class Parser
 
             // see if we can stop early
             if ($char === '{' || $char === ',' || $char === ';' || $char === '}' || $char === '@') {
+                break;
+            }
+
+            // parsing a sub selector in () stop with the closing )
+            if ($subSelector && $char === ')') {
                 break;
             }
 
@@ -2307,21 +2316,46 @@ class Parser
 
                     $ss = $this->count;
 
-                    if ($this->matchChar('(') &&
-                      ($this->openString(')', $str, '(') || true) &&
-                      $this->matchChar(')')
-                    ) {
-                        $parts[] = '(';
+                    if ($nameParts === ['not'] || $nameParts === ['is'] || $nameParts === ['has'] || $nameParts === ['where']) {
+                        if ($this->matchChar('(') &&
+                          ($this->selectors($subs, true) || true) &&
+                          $this->matchChar(')')
+                        ) {
+                            $parts[] = '(';
 
-                        if (! empty($str)) {
-                            $parts[] = $str;
+                            while ($sub = array_shift($subs)) {
+                                while ($ps = array_shift($sub)) {
+                                    foreach ($ps as &$p) {
+                                        $parts[] = $p;
+                                    }
+                                    if (count($sub) && reset($sub)) {
+                                        $parts[] = ' ';
+                                    }
+                                }
+                                if (count($subs) && reset($subs)) {
+                                    $parts[] = ', ';
+                                }
+                            }
+                            $parts[] = ')';
+                        } else {
+                            $this->seek($ss);
                         }
-
-                        $parts[] = ')';
                     } else {
-                        $this->seek($ss);
-                    }
+                        if ($this->matchChar('(') &&
+                          ($this->openString(')', $str, '(') || true) &&
+                          $this->matchChar(')')
+                        ) {
+                            $parts[] = '(';
 
+                            if (! empty($str)) {
+                                $parts[] = $str;
+                            }
+
+                            $parts[] = ')';
+                        } else {
+                            $this->seek($ss);
+                        }
+                    }
                     continue;
                 }
             }
