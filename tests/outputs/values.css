@@ -5,14 +5,12 @@
   width: 80%;
   color: "hello world";
   height: url("http://google.com");
+  background-image: url(//host/image.png);
   dads: url(http://leafo.net);
   padding: 10px 10px 10px 10px, 3px 3px 3px;
-  textblock: "This is a \
-multiline block \
-#not { color: #eee;}";
+  textblock: "This is a multiline block #not { color: #eee;}";
   margin: 4, 3, 1;
-  content: "This is a \
-multiline string.";
+  content: "This is a multiline string.";
   border-radius: -1px -1px -1px black;
   grid-template-columns: [avatar] 2fr [body] 6fr; }
 
@@ -36,3 +34,10 @@ multiline string.";
 
 #self {
   content: "#self"; }
+
+@font-face {
+  unicode-range: U+26;
+  unicode-range: U+0-7F;
+  unicode-range: U+0025-00FF;
+  unicode-range: U+4??;
+  unicode-range: U+0025-00FF, U+4??; }

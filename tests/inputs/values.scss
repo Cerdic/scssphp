@@ -6,6 +6,8 @@
     width: 80%;
     color: "hello world";
     height: url("http://google.com");
+    background-image: url(//host/image.png
+);
     dads: url(http://leafo.net);
     padding: 10px 10px 10px 10px, 3px 3px 3px;
     textblock: "This is a \
@@ -46,4 +48,12 @@ multiline string.";
     $self1: #{&};
     $self2: &;
     content:'#{$self2}';
+}
+
+@font-face {
+    unicode-range: U+26;
+    unicode-range: U+0-7F;
+    unicode-range: U+0025-00FF;
+    unicode-range: U+4??;
+    unicode-range: U+0025-00FF, U+4??;
 }
