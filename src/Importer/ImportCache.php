@@ -256,7 +256,7 @@ final class ImportCache
 
         $this->resultsCache[(string) $canonicalUrl] = $result;
 
-        return Stylesheet::parse($result->getContents(), $result->getSyntax(), $quiet ? new QuietLogger() : $this->logger, self::resolveUri($originalUrl, $canonicalUrl));
+        return \ScssPhp\ScssPhp\Compiler::parseStylesheet($result->getContents(), $result->getSyntax(), $quiet ? new QuietLogger() : $this->logger, self::resolveUri($originalUrl, $canonicalUrl));
     }
 
     public function humanize(UriInterface $canonicalUrl): UriInterface

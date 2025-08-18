@@ -25,6 +25,8 @@ use ScssPhp\ScssPhp\Function\FunctionRegistry;
 use ScssPhp\ScssPhp\Importer\FilesystemImporter;
 use ScssPhp\ScssPhp\Importer\ImportCache;
 use ScssPhp\ScssPhp\Importer\Importer;
+use ScssPhp\ScssPhp\Importer\ImportParserInterface;
+use ScssPhp\ScssPhp\Importer\ImportParser;
 use ScssPhp\ScssPhp\Importer\LegacyCallbackImporter;
 use ScssPhp\ScssPhp\Importer\NoOpImporter;
 use ScssPhp\ScssPhp\Logger\DeprecationProcessingLogger;
@@ -58,6 +60,8 @@ final class Compiler
     public static $emptyList    = [Type::T_LIST, '', []];
     public static $emptyMap     = [Type::T_MAP, [], []];
     public static $emptyString  = [Type::T_STRING, '"', []];
+
+    private static ImportParserInterface $importParser;
 
     /**
      * @var list<Importer>
@@ -127,6 +131,25 @@ final class Compiler
     public function __construct()
     {
         $this->logger = new StreamLogger(fopen('php://stderr', 'w'), true);
+        if (empty(self::$importParser)) {
+            self::$importParser = new ImportParser();
+        }
+    }
+
+    /**
+     * Sets an alternative importParser
+     * for parser caching
+     *
+     * Changing the importParser in the middle of the compilation is not
+     * supported and will result in an undefined behavior.
+     * $importParser is shared through Compiler instances
+     *
+     * @param ImportParserInterface $importParser
+     * @return void
+     */
+    public function setImportParser(ImportParserInterface $importParser): void
+    {
+        self::$importParser = $importParser;
     }
 
     /**
@@ -414,7 +437,7 @@ final class Compiler
         }
 
         $importCache = $this->createImportCache($logger);
-        $stylesheet = Stylesheet::parse($source, $syntax, $logger, $url);
+        $stylesheet = self::parseStylesheet($source, $syntax, $logger, $url);
 
         $importer ??= $url === null ? new NoOpImporter() : new FilesystemImporter(null);
 
@@ -439,6 +462,11 @@ final class Compiler
         }
 
         return new ImportCache($importers, $logger);
+    }
+
+    public static function parseStylesheet(string $contents, Syntax $syntax, ?LoggerInterface $logger = null, ?UriInterface $sourceUrl = null): Stylesheet
+    {
+        return (self::$importParser)::parse($contents, $syntax, $logger, $sourceUrl);
     }
 
     /**
